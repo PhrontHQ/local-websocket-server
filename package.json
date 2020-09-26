@@ -1,0 +1,47 @@
+{
+  "_comment": [
+    "# If you use npm to generate or modify this file, make sure",
+    "# to restore the file's 4 space indents after the generation",
+    "# or modification so it matches other source files in the",
+    "# project. npm only generates files with 2 space indents",
+    "# (see https://github.com/npm/npm/pull/3180#issuecomment-16336516)."
+  ],
+  "name": "local-websocket-server",
+  "version": "1.0.0",
+  "private": false,
+  "license": "BSD-3-Clause",
+  "main": "index.js",
+  "author": "Phront. (https://phront.com/)",
+  "repository": {
+    "type": "git",
+    "url": "PhrontHQ/serverless-data-worker"
+  },
+  "dependencies": {
+    "montage": "github:marchant/montage#montage-19",
+    "phront": "github:phrontHQ/phront#master",
+    "aws-sdk": "^2.716.0",
+    "ws": "~7.2.3"
+  },
+  "devDependencies": {
+    "concurrently": "^3.4.0",
+    "http-server": "^0.9.0",
+    "jasmine-console-reporter": "^1.2.7",
+    "jasmine-core": "^2.5.2",
+    "karma": "^1.5.0",
+    "karma-chrome-launcher": "^2.0.0",
+    "karma-coverage": "^1.1.1",
+    "karma-firefox-launcher": "^1.0.1",
+    "karma-jasmine": "^1.1.0",
+    "karma-phantomjs-launcher": "^1.0.2",
+    "montage-testing": "git://github.com/montagejs/montage-testing.git#master",
+    "open": "0.0.5",
+    "serverless-offline": "^6.0.0-alpha.43"
+  },
+  "scripts": {
+    "jsdoc": "jsdoc -c jsdoc.json",
+    "test": "node test/run-node.js",
+    "test:karma": "karma start --no-auto-watch --single-run",
+    "test:karma-dev": "karma start --auto-watch --no-single-run",
+    "test:jasmine": "concurrently \"http-server -a localhost -p 8084\" \"open http://localhost:8084/test/run.html\""
+  }
+}
