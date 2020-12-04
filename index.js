@@ -49,7 +49,15 @@ functionModule.worker.then(function (worker) {
 
     const wss = new WebSocket.Server({ port: port });
 
-    wss.on('connection', function connection(ws) {
+    wss.on('connection', function connection(ws, req) {
+
+        const ip = req ? req.socket.remoteAddress: "127.0.0.1";
+        /*
+            When the server runs behind a proxy like NGINX, the de-facto standard is to use the X-Forwarded-For header.
+        */
+       //const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+
+
         var mockGateway =  {
             postToConnection: function(params) {
                 this._promise = new Promise(function(resolve,reject) { 
@@ -81,7 +89,10 @@ functionModule.worker.then(function (worker) {
         functionModule.connect( {
                 requestContext: {
                     connectionId: uuid.generate(),
-                    stage: program.stage
+                    stage: program.stage,
+                    identity: {
+                        sourceIp: ip
+                    }
                 },
                 "body":""
             },
@@ -98,7 +109,10 @@ functionModule.worker.then(function (worker) {
             functionModule.default( {
                     requestContext: {
                         connectionId: uuid.generate(),
-                        stage: program.stage
+                        stage: program.stage,
+                        identity: {
+                            sourceIp: ip
+                        }
                     },
                     "body":message
                 },
