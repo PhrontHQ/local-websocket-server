@@ -52,7 +52,7 @@ functionModule.worker.then(function (worker) {
     wss.on('connection', function connection(ws, req) {
 
         const ip = req ? req.socket.remoteAddress: "127.0.0.1";
-        const headers = req.headers,
+        const headers = req.headers;
         const userAgent = headers["user-agent"];
         /*
             When the server runs behind a proxy like NGINX, the de-facto standard is to use the X-Forwarded-For header.
