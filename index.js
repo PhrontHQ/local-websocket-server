@@ -52,6 +52,7 @@ functionModule.worker.then(function (worker) {
     wss.on('connection', function connection(ws, req) {
 
         const ip = req ? req.socket.remoteAddress: "127.0.0.1";
+        const headers = req.headers;
         /*
             When the server runs behind a proxy like NGINX, the de-facto standard is to use the X-Forwarded-For header.
         */
@@ -94,6 +95,7 @@ functionModule.worker.then(function (worker) {
                         sourceIp: ip
                     }
                 },
+                "headers": headers,
                 "body":""
             },
             mockContext,
@@ -114,6 +116,7 @@ functionModule.worker.then(function (worker) {
                             sourceIp: ip
                         }
                     },
+                    "headers": headers,
                     "body":message
                 },
                 mockDefaultContext,
