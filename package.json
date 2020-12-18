@@ -21,7 +21,7 @@
     "commander": "^6.1.0",
     "montage": "github:marchant/montage#montage-19",
     "phront": "github:phrontHQ/phront#master",
-    "ws": "~7.2.3"
+    "ws": "~7.4.1"
   },
   "devDependencies": {
     "concurrently": "^3.4.0",
