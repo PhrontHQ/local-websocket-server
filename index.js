@@ -1,4 +1,8 @@
+const http = require('http');
 const WebSocket = require('ws');
+const url = require('url');
+const URL = url.URL;
+const URLSearchParams = url.URLSearchParams;
 
 //See https://www.npmjs.com/package/commander
 const { program } = require('commander');
@@ -47,7 +51,82 @@ functionModule = require(functionModuleId);
 
 functionModule.worker.then(function (worker) {
 
-    const wss = new WebSocket.Server({ port: port });
+    function authorizeAsync(request, socket, head) {
+        const ip = socket.remoteAddress ? socket.remoteAddress : "127.0.0.1";
+        const headers = request.headers;
+        const url = new URL(request.url,headers.origin);
+        const userAgent = headers["user-agent"];
+
+        if(!socket.connectionId) {
+            socket.connectionId = uuid.generate();
+        }
+
+        return new Promise(function(resolve, reject) {
+            var mockContext,
+            callback = function(authResponseError, authResponseData) {
+                if(authResponseError) {
+                    reject(authResponseError);
+                } else {
+                    resolve(authResponseData);
+                }
+            },
+            event = {
+                type: 'REQUEST',
+                requestContext: {
+                        connectionId: socket.connectionId,
+                        stage: program.stage,
+                        identity: {
+                            sourceIp: ip,
+                            userAgent: userAgent
+                        }
+                    },
+                    "headers": headers,
+                    "body":""
+                },
+                queryStringParameters,
+                multiValueQueryStringParameters;
+    
+            console.log("request:",request);
+            console.log("socket:",socket);
+
+            const searchParams = url.searchParams;
+
+            //Iterate the search parameters.
+            for (let p of searchParams) {
+                console.log(p);
+
+                (queryStringParameters || (queryStringParameters = {}))[p[0]] = p[1];
+                (multiValueQueryStringParameters || (multiValueQueryStringParameters = {}))[p[0]] = [p[1]];
+                /*
+
+                    queryStringParameters: {
+                    identity: 'ewogICJjcml0ZXJpYSI6IHsKICAgICJwcm90b3R5cGUiOiAibW9udGFnZS9jb3JlL2NyaXRlcmlhIiwKICAgICJ2YWx1ZXMiOiB7CiAgICAgICJleHByZXNzaW9uIjogIm9yaWdpbklkID09ICQub3JpZ2luSWQiLAogICAgICAicGFyYW1ldGVycyI6IHsKICAgICAgICAib3JpZ2luSWQiOiAiMTg3Y2ZhOWEtYzMwMy00NzM3LWE3NzAtMTdkNDZlNzUyNGE0IgogICAgICB9CiAgICB9CiAgfSwKICAiZGF0YXF1ZXJ5IjogewogICAgInByb3RvdHlwZSI6ICJtb250YWdlL2RhdGEvbW9kZWwvZGF0YS1xdWVyeSIsCiAgICAidmFsdWVzIjogewogICAgICAiY3JpdGVyaWEiOiB7IkAiOiAiY3JpdGVyaWEifSwKICAgICAgInR5cGVNb2R1bGUiOiB7CiAgICAgICAgIiUiOiAibW9udGFnZS9kYXRhL21vZGVsL2RhdGEtaWRlbnRpdHkubWpzb24iCiAgICAgIH0KICAgIH0KICB9LAogICJyb290IjogewogICAgInByb3RvdHlwZSI6ICJtb250YWdlL2RhdGEvbW9kZWwvZGF0YS1pZGVudGl0eSIsCiAgICAidmFsdWVzIjogewogICAgICAicXVlcnkiOiB7IkAiOiAiZGF0YXF1ZXJ5In0KICAgIH0KICB9Cn0='
+                    },
+                    multiValueQueryStringParameters: {
+                    identity: [
+                        'ewogICJjcml0ZXJpYSI6IHsKICAgICJwcm90b3R5cGUiOiAibW9udGFnZS9jb3JlL2NyaXRlcmlhIiwKICAgICJ2YWx1ZXMiOiB7CiAgICAgICJleHByZXNzaW9uIjogIm9yaWdpbklkID09ICQub3JpZ2luSWQiLAogICAgICAicGFyYW1ldGVycyI6IHsKICAgICAgICAib3JpZ2luSWQiOiAiMTg3Y2ZhOWEtYzMwMy00NzM3LWE3NzAtMTdkNDZlNzUyNGE0IgogICAgICB9CiAgICB9CiAgfSwKICAiZGF0YXF1ZXJ5IjogewogICAgInByb3RvdHlwZSI6ICJtb250YWdlL2RhdGEvbW9kZWwvZGF0YS1xdWVyeSIsCiAgICAidmFsdWVzIjogewogICAgICAiY3JpdGVyaWEiOiB7IkAiOiAiY3JpdGVyaWEifSwKICAgICAgInR5cGVNb2R1bGUiOiB7CiAgICAgICAgIiUiOiAibW9udGFnZS9kYXRhL21vZGVsL2RhdGEtaWRlbnRpdHkubWpzb24iCiAgICAgIH0KICAgIH0KICB9LAogICJyb290IjogewogICAgInByb3RvdHlwZSI6ICJtb250YWdlL2RhdGEvbW9kZWwvZGF0YS1pZGVudGl0eSIsCiAgICAidmFsdWVzIjogewogICAgICAicXVlcnkiOiB7IkAiOiAiZGF0YXF1ZXJ5In0KICAgIH0KICB9Cn0='
+                    ]
+                    },
+                */
+            }
+
+            if(queryStringParameters) {
+                event.queryStringParameters = queryStringParameters;
+                event.multiValueQueryStringParameters = multiValueQueryStringParameters;
+            }
+  
+
+            //Needs to inject stage property for phront service to use the right info
+            functionModule.authorize( event,
+                mockContext,
+                callback
+            );    
+        });
+        //return new Promise((resolve) => setTimeout(resolve.bind(null, 'Hello world'), 500));
+    }
+      
+    const server = http.createServer();
+    const wss = new WebSocket.Server({ noServer: true });
 
     wss.on('connection', function connection(ws, req) {
 
@@ -84,13 +163,13 @@ functionModule.worker.then(function (worker) {
         //Overrides with our dev equivalent
         worker.apiGateway = mockGateway;
         
-        var mockContext,
+        var mockContext = {},
         mockCallback = function(){};
 
         //Needs to inject stage property for phront service to use the right info
         functionModule.connect( {
                 requestContext: {
-                    connectionId: uuid.generate(),
+                    connectionId: req.socket.connectionId,
                     stage: program.stage,
                     identity: {
                         sourceIp: ip,
@@ -112,7 +191,7 @@ functionModule.worker.then(function (worker) {
 
             functionModule.default( {
                     requestContext: {
-                        connectionId: uuid.generate(),
+                        connectionId: req.socket.connectionId,
                         stage: program.stage,
                         identity: {
                             sourceIp: ip,
@@ -131,6 +210,25 @@ functionModule.worker.then(function (worker) {
      
         //ws.send('something');
     });
+
+    server.on('upgrade', async (request, socket, head) => {
+        let data;
+      
+        try {
+          data = await authorizeAsync(request, socket, head);
+        } catch (error) {
+          socket.write(`HTTP/1.1 500 ${http.STATUS_CODES[500]}\r\n\r\n`);
+          socket.destroy();
+          return;
+        }
+      
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit('connection', ws, request, data);
+        });
+      });
+      
+    server.listen(port);
+
 
 });
 
