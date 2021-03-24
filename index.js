@@ -211,6 +211,10 @@ functionModule.worker.then(function (worker) {
         //ws.send('something');
     });
 
+    /*
+        inspired by https://github.com/websockets/ws/issues/377
+    */
+
     server.on('upgrade', async (request, socket, head) => {
         let data;
       
