@@ -67,6 +67,7 @@ functionModule.worker.then(function (worker) {
                 if(authResponseError) {
                     reject(authResponseError);
                 } else {
+                    socket.principalId = authResponseData.principalId;
                     resolve(authResponseData);
                 }
             },
@@ -174,6 +175,9 @@ functionModule.worker.then(function (worker) {
                     identity: {
                         sourceIp: ip,
                         userAgent: userAgent
+                    },
+                    authorizer: {
+                        principalId: req.socket.principalId
                     }
                 },
                 "headers": headers,
@@ -196,6 +200,9 @@ functionModule.worker.then(function (worker) {
                         identity: {
                             sourceIp: ip,
                             userAgent: userAgent
+                        },
+                        authorizer: {
+                            principalId: req.socket.principalId
                         }
                     },
                     "headers": headers,
