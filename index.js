@@ -162,7 +162,8 @@ functionModule.worker.then(function (worker) {
         };
 
         //Overrides with our dev equivalent
-        worker.apiGateway = mockGateway;
+        ws.apiGateway = mockGateway;
+        worker.apiGateway = ws.apiGateway;
         
         var mockContext = {},
         mockCallback = function(){};
@@ -192,6 +193,8 @@ functionModule.worker.then(function (worker) {
         ws.on('message', function incoming(message) {
             var mockDefaultContext = {},
             mockDefaultCallback = function(){};
+            
+            worker.apiGateway = ws.apiGateway;
 
             functionModule.default( {
                     requestContext: {
