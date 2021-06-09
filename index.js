@@ -54,7 +54,7 @@ functionModule.worker.then(function (worker) {
     function authorizeAsync(request, socket, head) {
         const ip = socket.remoteAddress ? socket.remoteAddress : "127.0.0.1";
         const headers = request.headers;
-        const url = new URL(request.url,headers.origin);
+        const url = new URL(request.url, headers.origin ? headers.origin : `http://${headers.host}`);
         const userAgent = headers["user-agent"];
 
         if(!socket.connectionId) {
