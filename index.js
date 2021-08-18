@@ -1,15 +1,23 @@
 const http = require('http');
+const https = require('https');
 const WebSocket = require('ws');
 const url = require('url');
 const URL = url.URL;
 const URLSearchParams = url.URLSearchParams;
+const fs = require('fs');
 
+
+/*
+    Input from https://blog.zackad.dev/en/2017/08/19/create-websocket-with-nodejs.html
+*/
 //See https://www.npmjs.com/package/commander
 const { program } = require('commander');
 
 program.option('-f, --function <function>', 'The serveless function to run')
         .option('-p, --port <port>', 'The websocket port to use', 7272)
-        .option('-s, --stage <stage>', 'The stage to use', "staging");
+        .option('-s, --stage <stage>', 'The stage to use', "staging")
+        .option('-c, --cert <sslCertificatePath>', 'Path to the ssl certificate file to use', null)
+        .option('-k, --key <sslKeyPath>', 'Path to the ssl key file to use', null);
 
 program.parse(process.argv);
 var uuid = require("montage/core/uuid");
@@ -18,10 +26,23 @@ var uuid = require("montage/core/uuid");
 //     uuid = require("montage/core/uuid"),
 var functionPath = program.function,
     port = program.port,
+    sslCertificatePath = program.cert,
+    sslKeyPath = program.key,
     functionModuleId,
     functionModuledDirName,
     functionModule,
-    OperationCoordinatorPromise;
+    OperationCoordinatorPromise,
+    privateKey,
+    certificate,
+    credentials;
+
+    // read ssl certificate
+    if(sslCertificatePath && sslKeyPath) {
+        privateKey = fs.readFileSync(sslKeyPath, 'utf8');
+        certificate = fs.readFileSync(sslCertificatePath, 'utf8');
+        credentials = { key: privateKey, cert: certificate };        
+    }
+
 
 // //From Montage
 // Load package
@@ -125,8 +146,9 @@ functionModule.worker.then(function (worker) {
         });
         //return new Promise((resolve) => setTimeout(resolve.bind(null, 'Hello world'), 500));
     }
-      
-    const server = http.createServer();
+
+    const server = credentials ?  https.createServer(credentials) : http.createServer();
+
     const wss = new WebSocket.Server({ noServer: true });
 
     wss.on('connection', function connection(ws, req) {
@@ -241,8 +263,52 @@ functionModule.worker.then(function (worker) {
         });
       });
       
-    server.listen(port);
 
+    server.on("request", (request, response) => {
+        // handle requests
+
+        let data = []
+        request
+          .on("data", d => {
+            data.push(d)
+          })
+          .on("end", () => {
+            data = Buffer.concat(data).toString();
+
+
+            var mockDefaultContext = {},
+            mockDefaultCallback = function(){};
+            
+            worker.apiGateway = ws.apiGateway;
+
+            functionModule.default( {
+                    requestContext: {
+                        connectionId: req.socket.connectionId,
+                        stage: program.stage,
+                        identity: {
+                            sourceIp: ip,
+                            userAgent: userAgent
+                        },
+                        authorizer: {
+                            principalId: req.socket.principalId
+                        }
+                    },
+                    "headers": headers,
+                    "body":message
+                },
+                mockDefaultContext,
+                mockDefaultCallback
+            );    
+
+
+
+            response.statusCode = 201;
+            response.end();
+          })
+      
+    });
+      
+    server.listen(port);
 
 });
 
