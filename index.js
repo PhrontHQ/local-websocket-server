@@ -7,6 +7,25 @@ const URLSearchParams = url.URLSearchParams;
 const fs = require('fs');
 
 
+/**
+ * The timeoutPromise helper allows you to wrap any promise to fulfill within a timeout.
+ * 
+ * @param {Promise} promise A promise instance
+ * @param {BigInteger} timeoutInMilliseconds The time limit in milliseconds to fulfill or reject the promise.
+ * @returns {Promise} A pending Promise
+ */
+ Promise.timeout = function(promise, timeoutInMilliseconds){
+    return Promise.race([
+        promise, 
+        new Promise(function(resolve, reject){
+            setTimeout(function() {
+                reject(new Error("timeout"));
+            }, timeoutInMilliseconds);
+        })
+    ]);
+};
+
+
 /*
     Input from https://blog.zackad.dev/en/2017/08/19/create-websocket-with-nodejs.html
 */
@@ -17,7 +36,8 @@ program.option('-f, --function <function>', 'The serveless function to run')
         .option('-p, --port <port>', 'The websocket port to use', 7272)
         .option('-s, --stage <stage>', 'The stage to use', "staging")
         .option('-c, --cert <sslCertificatePath>', 'Path to the ssl certificate file to use', null)
-        .option('-k, --key <sslKeyPath>', 'Path to the ssl key file to use', null);
+        .option('-k, --key <sslKeyPath>', 'Path to the ssl key file to use', null)
+        .option('-gt, --gatewayTimeout <timeout>', 'A timeout for message delivery getting something back', null);
 
 program.parse(process.argv);
 var uuid = require("montage/core/uuid");
@@ -28,6 +48,7 @@ var functionPath = program.function,
     port = program.port,
     sslCertificatePath = program.cert,
     sslKeyPath = program.key,
+    gatewayTimeout = program.gatewayTimeout || 29000, /* ms - the hard-coded timeout of the AWS APIGateway */
     functionModuleId,
     functionModuledDirName,
     functionModule,
@@ -251,7 +272,7 @@ functionModule.worker.then(function (worker) {
         let data;
       
         try {
-          data = await authorizeAsync(request, socket, head);
+          data = await  Promise.timeout(authorizeAsync(request, socket, head), gatewayTimeout);
         } catch (error) {
           socket.write(`HTTP/1.1 500 ${http.STATUS_CODES[500]}\r\n\r\n`);
           socket.destroy();
