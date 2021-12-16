@@ -129,8 +129,8 @@ functionModule.worker.then(function (worker) {
                 queryStringParameters,
                 multiValueQueryStringParameters;
     
-            console.log("request:",request);
-            console.log("socket:",socket);
+            // console.log("request:",request);
+            // console.log("socket:",socket);
 
             const searchParams = url.searchParams;
 
