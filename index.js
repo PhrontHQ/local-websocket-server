@@ -1,3 +1,4 @@
+//global.Promise = require("bluebird");
 const http = require('http');
 const https = require('https');
 const WebSocket = require('ws');
@@ -91,7 +92,17 @@ if(functionPath.endsWith(".js")) {
 // })
 functionModule = require(functionModuleId);
 
-functionModule.worker.then(function (worker) {
+/*
+    As we move to transition from mr's require(async) to node's require (sync) we need to do some tweaking here 
+*/
+var workerPromise;
+if(functionModule && functionModule.worker && typeof functionModule.worker.then !== "function") {
+    workerPromise = Promise.resolve(functionModule);
+} else {
+    workerPromise = functionModule.worker;
+}
+
+workerPromise.then(function (worker) {
 
     function authorizeAsync(request, socket, head) {
         const ip = socket.remoteAddress ? socket.remoteAddress : "127.0.0.1";
@@ -136,7 +147,7 @@ functionModule.worker.then(function (worker) {
 
             //Iterate the search parameters.
             for (let p of searchParams) {
-                console.log(p);
+                console.log("searchParams: ", p);
 
                 (queryStringParameters || (queryStringParameters = {}))[p[0]] = p[1];
                 (multiValueQueryStringParameters || (multiValueQueryStringParameters = {}))[p[0]] = [p[1]];
