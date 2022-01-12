@@ -49,7 +49,7 @@ var functionPath = program.function,
     port = program.port,
     sslCertificatePath = program.cert,
     sslKeyPath = program.key,
-    gatewayTimeout = program.gatewayTimeout || 29000, /* ms - the hard-coded timeout of the AWS APIGateway */
+    gatewayTimeout = program.gatewayTimeout, /* || 29000, *//* ms - the hard-coded timeout of the AWS APIGateway */
     functionModuleId,
     functionModuledDirName,
     functionModule,
@@ -283,7 +283,11 @@ workerPromise.then(function (worker) {
         let data;
       
         try {
-          data = await  Promise.timeout(authorizeAsync(request, socket, head), gatewayTimeout);
+            if(gatewayTimeout) {
+                data = await Promise.timeout(authorizeAsync(request, socket, head), gatewayTimeout);
+            } else {
+                data = await authorizeAsync(request, socket, head);
+            }
         } catch (error) {
           socket.write(`HTTP/1.1 500 ${http.STATUS_CODES[500]}\r\n\r\n`);
           socket.destroy();
