@@ -15,7 +15,7 @@ const fs = require('fs');
  * @param {BigInteger} timeoutInMilliseconds The time limit in milliseconds to fulfill or reject the promise.
  * @returns {Promise} A pending Promise
  */
- Promise.timeout = function(promise, timeoutInMilliseconds){
+function PromiseTimeout(promise, timeoutInMilliseconds){
     return Promise.race([
         promise, 
         new Promise(function(resolve, reject){
@@ -284,7 +284,7 @@ workerPromise.then(function (worker) {
       
         try {
             if(gatewayTimeout) {
-                data = await Promise.timeout(authorizeAsync(request, socket, head), gatewayTimeout);
+                data = await PromiseTimeout(authorizeAsync(request, socket, head), gatewayTimeout);
             } else {
                 data = await authorizeAsync(request, socket, head);
             }
