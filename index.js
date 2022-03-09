@@ -147,7 +147,7 @@ workerPromise.then(function (worker) {
 
             //Iterate the search parameters.
             for (let p of searchParams) {
-                console.log("searchParams: ", p);
+                //console.log("searchParams: ", p);
 
                 (queryStringParameters || (queryStringParameters = {}))[p[0]] = p[1];
                 (multiValueQueryStringParameters || (multiValueQueryStringParameters = {}))[p[0]] = [p[1]];
