@@ -115,7 +115,9 @@ workerPromise.then(function (worker) {
         }
 
         return new Promise(function(resolve, reject) {
-            var mockContext,
+            var mockContext = {
+                callbackWaitsForEmptyEventLoop: true
+            },
             callback = function(authResponseError, authResponseData) {
                 if(authResponseError) {
                     reject(authResponseError);
