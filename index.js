@@ -115,10 +115,12 @@ workerPromise.then(function (worker) {
         }
 
         return new Promise(function(resolve, reject) {
+            var callbackCalled = false;
             var mockContext = {
                 callbackWaitsForEmptyEventLoop: true
             },
             callback = function(authResponseError, authResponseData) {
+                callbackCalled = true;
                 if(authResponseError) {
                     reject(authResponseError);
                 } else {
@@ -173,10 +175,24 @@ workerPromise.then(function (worker) {
   
 
             //Needs to inject stage property for phront service to use the right info
-            functionModule.authorize( event,
+            var authorizePromise = functionModule.authorize( event,
                 mockContext,
                 callback
-            );    
+            );
+
+            if(authorizePromise) {
+                authorizePromise.then((resolvedValue) => {
+                    if(!callbackCalled) {
+                        callback(null, resolvedValue);
+                    }
+                    
+                }, (error) => {
+                    if(!callbackCalled) {
+                        callback(error);
+                    }
+                })
+
+            }
         });
         //return new Promise((resolve) => setTimeout(resolve.bind(null, 'Hello world'), 500));
     }
