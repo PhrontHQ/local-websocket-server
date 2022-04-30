@@ -120,12 +120,39 @@ workerPromise.then(function (worker) {
                 callbackWaitsForEmptyEventLoop: true
             },
             callback = function(authResponseError, authResponseData) {
+                var statements;
+
                 callbackCalled = true;
                 if(authResponseError) {
                     reject(authResponseError);
+                } else if((statements = authResponseData?.policyDocument?.Statement)) {
+
+                    var hasDeny = false,
+                        hasAllow = false,
+                        countI = statements.length,
+                        i = 0;
+                
+                    for(; ( i < countI); i++ ) {
+                        if(statements[i].Effect !== "Allow") {
+                            console.log("main authorize authResponse Deny:",authResponse);
+                            if(timer) console.log(timer.runtimeMsStr());
+                            hasDeny = true;
+                            break;
+                        } else {
+                            hasAllow = true;
+                        }
+                    }
+
+                    if(hasDeny) {
+                        reject(new Error("Unauthorized"));
+                    }
+                    else if(hasAllow) {
+                        socket.principalId = authResponseData.principalId;
+                        resolve(authResponseData);
+                    }
+
                 } else {
-                    socket.principalId = authResponseData.principalId;
-                    resolve(authResponseData);
+                    reject(new Error(JSON.stringify(authResponseData)));
                 }
             },
             event = {
