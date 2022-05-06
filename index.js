@@ -291,11 +291,13 @@ workerPromise.then(function (worker) {
     
         ws.on('message', function incoming(message) {
             var mockDefaultContext = {},
-            mockDefaultCallback = function(){};
+                mockDefaultCallback = function(error, result){},
+                callbackCalled = false;
+
             
             worker.apiGateway = ws.apiGateway;
 
-            functionModule.default( {
+            var defaultPromise = functionModule.default( {
                     requestContext: {
                         connectionId: req.socket.connectionId,
                         stage: program.stage,
@@ -314,6 +316,19 @@ workerPromise.then(function (worker) {
                 mockDefaultCallback
             );    
           
+            if(defaultPromise) {
+                defaultPromise.then((resolvedValue) => {
+                    if(!callbackCalled) {
+                        mockDefaultCallback(null, resolvedValue);
+                    }
+                    
+                }, (error) => {
+                    if(!callbackCalled) {
+                        mockDefaultCallback(error);
+                    }
+                })
+            }
+
                 //console.log('received: %s', message);
         });
      
