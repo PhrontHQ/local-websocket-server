@@ -18,8 +18,7 @@
   },
   "dependencies": {
     "commander": "^6.1.0",
-    "montage": "github:PhrontHQ/montage#montage-19",
-    "phront": "github:phrontHQ/phront#master",
+    "mod": "github:PhrontHQ/mod#mod",
     "ws": "~7.4.1"
   },
   "devDependencies": {
@@ -33,7 +32,6 @@
     "karma-firefox-launcher": "^1.0.1",
     "karma-jasmine": "^1.1.0",
     "karma-phantomjs-launcher": "^1.0.2",
-    "montage-testing": "git://github.com/montagejs/montage-testing.git#master",
     "open": "0.0.5",
     "serverless-offline": "^6.0.0-alpha.43"
   },

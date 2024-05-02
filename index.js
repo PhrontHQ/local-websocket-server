@@ -41,10 +41,7 @@ program.option('-f, --function <function>', 'The serveless function to run')
         .option('-gt, --gatewayTimeout <timeout>', 'A timeout for message delivery getting something back', null);
 
 program.parse(process.argv);
-var uuid = require("montage/core/uuid");
-// var Montage = require('montage/montage'),
-//     PATH = require("path"),
-//     uuid = require("montage/core/uuid"),
+var uuid = require("mod/core/uuid");
 var functionPath = program.function,
     port = program.port,
     sslCertificatePath = program.cert,
@@ -65,10 +62,6 @@ var functionPath = program.function,
         credentials = { key: privateKey, cert: certificate };        
     }
 
-
-// //From Montage
-// Load package
-
 functionModuledDirName = functionPath.substring(0,functionPath.lastIndexOf("/"));
 
 if(functionPath.endsWith(".js")) {
@@ -76,20 +69,6 @@ if(functionPath.endsWith(".js")) {
     // functionModuleId = functionPath.substring(functionPath.lastIndexOf("/")+1,functionPath.length-3);
 }
 
-// OperationCoordinatorPromise = Montage.loadPackage(PATH.join(__dirname, "."), {
-//     mainPackageLocation: PATH.join(__filename, ".")
-// })
-// OperationCoordinatorPromise = Montage.loadPackage(PATH.join(functionModuledDirName, "."), {
-//     mainPackageLocation: PATH.join(functionPath, ".")
-// })
-// .then(function (mr) {
-//     return mr.async(functionModuleId);
-// })
-// .then(function (_functionModule) {
-//     //Returns a promise to the worker
-//     functionModule = _functionModule;
-//     return functionModule.worker;
-// })
 functionModule = require(functionModuleId);
 
 /*
