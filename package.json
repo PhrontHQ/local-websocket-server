@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "commander": "^6.1.0",
-    "mod": "github:PhrontHQ/mod#mod",
+    "mod": "github:PhrontHQ/mod#main",
     "ws": "~7.4.1"
   },
   "devDependencies": {
