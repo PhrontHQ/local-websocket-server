@@ -328,13 +328,14 @@ workerPromise.then(function (worker) {
                 data = await authorizeAsync(request, socket, head);
             }
         } catch (error) {
-          socket.write(`HTTP/1.1 500 ${http.STATUS_CODES[500]}\r\n\r\n`);
-          socket.destroy();
-          return;
+            console.log("on upgrade error: ", error);
+            socket.write(`HTTP/1.1 500 ${http.STATUS_CODES[500]}\r\n\r\n`);
+            socket.destroy();
+            return;
         }
       
         wss.handleUpgrade(request, socket, head, (ws) => {
-          wss.emit('connection', ws, request, data);
+            wss.emit('connection', ws, request, data);
         });
       });
       
