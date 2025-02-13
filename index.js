@@ -206,43 +206,61 @@ workerPromise.then(function (worker) {
     const server = credentials ?  https.createServer(credentials) : http.createServer();
 
     const wss = new WebSocket.Server({ noServer: true });
+    console.log("Starting a websocket server!");
 
+    const websocketTable = {};
+
+    const mockGateway =  {
+        postToConnection: function(params) {
+            /* params looks like:
+                {
+                    ConnectionId: event.requestContext.connectionId,
+                    Data: self._serializer.serializeObject(readOperationCompleted)
+                }
+            */
+          
+            this._promise = new Promise(function(resolve,reject) { 
+            //Retrieve the appropriate websocket on which to respond from our websocket map
+            var connectionId = params.ConnectionId;
+            var response_websocket = websocketTable[connectionId];
+            var serializedHandledOperation = params.Data;
+            console.log("Sending response on Websocket Connection with Remote IP:", response_websocket._socket.remoteAddress ," Remote Port: ", response_websocket._socket.remotePort ,  "ConnectionId:",response_websocket._socket.connectionId);
+            response_websocket.send(serializedHandledOperation);
+            resolve(true);
+
+            });
+            return this;
+        },
+        promise: function() {
+            return this._promise;
+        }
+    };
+    
+    worker.apiGateway =  mockGateway;
+    
     wss.on('connection', function connection(ws, req) {
 
+        console.log("ws: New Websocket Connection with Remote IP:", req.socket.remoteAddress ," Remote Port: ", req.socket.remotePort ,  "ConnectionId:",req.socket.connectionId);
         const ip = req ? req.socket.remoteAddress: "127.0.0.1";
         const headers = req.headers;
         const userAgent = headers["user-agent"];
+        websocketTable[req.socket.connectionId] = ws;
+
+        ws.on('close', function close(code,reason) {
+            console.log("Closing ws with code:",code," and Reason:",reason);
+            delete websocketTable[req.socket.connectionId];
+        });
+
+        ws.on('error', function ws_error(error) {
+            console.log("Error in ws",error);
+            delete websocketTable[req.socket.connectionId];
+         });
+
         /*
             When the server runs behind a proxy like NGINX, the de-facto standard is to use the X-Forwarded-For header.
         */
        //const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
 
-
-        var mockGateway =  {
-            postToConnection: function(params) {
-                this._promise = new Promise(function(resolve,reject) { 
-                    /* params looks like:
-                        {
-                            ConnectionId: event.requestContext.connectionId,
-                            Data: self._serializer.serializeObject(readOperationCompleted)
-                        }
-                    */
-                var serializedHandledOperation = params.Data;
-                ws.send(serializedHandledOperation);
-                resolve(true);
-    
-                });
-                return this;
-            },
-            promise: function() {
-                return this._promise;
-            }
-        };
-
-        //Overrides with our dev equivalent
-        ws.apiGateway = mockGateway;
-        worker.apiGateway = ws.apiGateway;
-        
         var mockContext = {},
         mockCallback = function(){};
 
@@ -272,9 +290,6 @@ workerPromise.then(function (worker) {
             var mockDefaultContext = {},
                 mockDefaultCallback = function(error, result){},
                 callbackCalled = false;
-
-            
-            worker.apiGateway = ws.apiGateway;
 
             var defaultPromise = functionModule.default( {
                     requestContext: {
@@ -307,11 +322,7 @@ workerPromise.then(function (worker) {
                     }
                 })
             }
-
-                //console.log('received: %s', message);
         });
-     
-        //ws.send('something');
     });
 
     /*
@@ -355,7 +366,6 @@ workerPromise.then(function (worker) {
             var mockDefaultContext = {},
             mockDefaultCallback = function(){};
             
-            worker.apiGateway = ws.apiGateway;
 
             functionModule.default( {
                     requestContext: {
@@ -387,4 +397,3 @@ workerPromise.then(function (worker) {
     server.listen(port);
 
 });
-
