@@ -224,10 +224,16 @@ workerPromise.then(function (worker) {
             var connectionId = params.ConnectionId;
             var response_websocket = websocketTable[connectionId];
             var serializedHandledOperation = params.Data;
-            console.log("Sending response on Websocket Connection with Remote IP:", response_websocket._socket.remoteAddress ," Remote Port: ", response_websocket._socket.remotePort ,  "ConnectionId:",response_websocket._socket.connectionId);
-            response_websocket.send(serializedHandledOperation);
+            //Need to check if the websocket has already been cleaned up and removed from the table by now.
+            //This can happen if it's closed while we're processing a request.
+            if (response_websocket) {
+              console.log("Sending response on Websocket Connection with Remote IP:", response_websocket._socket.remoteAddress, " Remote Port: ", response_websocket._socket.remotePort, "ConnectionId:", response_websocket._socket.connectionId);
+              response_websocket.send(serializedHandledOperation);
+            }
+            else {
+              console.log("Would have sent a response to a websocket connection, but the socket was closed before we were ready to send this data.")
+            }
             resolve(true);
-
             });
             return this;
         },
