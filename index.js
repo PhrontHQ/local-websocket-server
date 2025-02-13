@@ -257,11 +257,6 @@ workerPromise.then(function (worker) {
         */
        //const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
 
-
-        
-
-        console.log("ws: mockGateway",mockGateway);
-
         //Overrides with our dev equivalent
         ws.apiGateway = mockGateway;
         worker.apiGateway =  mockGateway;
