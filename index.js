@@ -212,13 +212,15 @@ workerPromise.then(function (worker) {
 
     const mockGateway =  {
         postToConnection: function(params) {
+            /* params looks like:
+                {
+                    ConnectionId: event.requestContext.connectionId,
+                    Data: self._serializer.serializeObject(readOperationCompleted)
+                }
+            */
+          
             this._promise = new Promise(function(resolve,reject) { 
-                /* params looks like:
-                    {
-                        ConnectionId: event.requestContext.connectionId,
-                        Data: self._serializer.serializeObject(readOperationCompleted)
-                    }
-                */
+            //Retrieve the appropriate websocket on which to respond from our websocket map
             var connectionId = params.ConnectionId;
             var response_ws = websocketTable[connectionId];
             var serializedHandledOperation = params.Data;
