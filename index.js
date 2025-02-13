@@ -233,7 +233,9 @@ workerPromise.then(function (worker) {
             return this._promise;
         }
     };
-
+    
+    worker.apiGateway =  mockGateway;
+    
     wss.on('connection', function connection(ws, req) {
 
         console.log("ws: New Websocket Connection with Remote IP:", req.socket.remoteAddress ," Remote Port: ", req.socket.remotePort ,  "ConnectionId:",req.socket.connectionId);
@@ -257,11 +259,6 @@ workerPromise.then(function (worker) {
         */
        //const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
 
-        //Overrides with our dev equivalent
-        ws.apiGateway = mockGateway;
-        worker.apiGateway =  mockGateway;
-
-        
         var mockContext = {},
         mockCallback = function(){};
 
@@ -291,9 +288,6 @@ workerPromise.then(function (worker) {
             var mockDefaultContext = {},
                 mockDefaultCallback = function(error, result){},
                 callbackCalled = false;
-
-            
-            worker.apiGateway = ws.apiGateway;
 
             var defaultPromise = functionModule.default( {
                     requestContext: {
@@ -374,7 +368,6 @@ workerPromise.then(function (worker) {
             var mockDefaultContext = {},
             mockDefaultCallback = function(){};
             
-            worker.apiGateway = ws.apiGateway;
 
             functionModule.default( {
                     requestContext: {
