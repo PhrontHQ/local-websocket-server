@@ -411,4 +411,3 @@ workerPromise.then(function (worker) {
     server.listen(port);
 
 });
-
