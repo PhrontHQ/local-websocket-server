@@ -322,11 +322,7 @@ workerPromise.then(function (worker) {
                     }
                 })
             }
-
-                //console.log('received: %s', message);
         });
-     
-        //ws.send('something');
     });
 
     /*
