@@ -242,13 +242,13 @@ workerPromise.then(function (worker) {
         const userAgent = headers["user-agent"];
         websocketTable[req.socket.connectionId] = ws;
 
-        ws.on('close', function close() {
-            console.log("Closing ws");
+        ws.on('close', function close(code,reason) {
+            console.log("Closing ws with code:",code," and Reason:",reason);
             delete websocketTable[req.socket.connectionId];
         });
 
-        ws.on('error', function ws_error() {
-            console.log("Error in ws");
+        ws.on('error', function ws_error(error) {
+            console.log("Error in ws",error);
             delete websocketTable[req.socket.connectionId];
          });
 
