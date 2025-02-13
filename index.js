@@ -224,7 +224,7 @@ workerPromise.then(function (worker) {
             var connectionId = params.ConnectionId;
             var response_websocket = websocketTable[connectionId];
             var serializedHandledOperation = params.Data;
-            console.log("Sending response on Websocket Connection with Remote IP:", response_ws._socket.remoteAddress ," Remote Port: ", response_ws._socket.remotePort ,  "ConnectionId:",response_ws._socket.connectionId);
+            console.log("Sending response on Websocket Connection with Remote IP:", response_websocket._socket.remoteAddress ," Remote Port: ", response_websocket._socket.remotePort ,  "ConnectionId:",response_websocket._socket.connectionId);
             response_websocket.send(serializedHandledOperation);
             resolve(true);
 
