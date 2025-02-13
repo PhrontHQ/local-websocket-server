@@ -233,9 +233,7 @@ workerPromise.then(function (worker) {
             else {
               console.log("Would have sent a response to a websocket connection, but the socket was closed before we were ready to send this data.")
             }
-            //TODO: Should we resolve(false) if we get here and the return connection is closed?
             resolve(true);
-
             });
             return this;
         },
