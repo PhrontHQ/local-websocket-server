@@ -222,10 +222,10 @@ workerPromise.then(function (worker) {
             this._promise = new Promise(function(resolve,reject) { 
             //Retrieve the appropriate websocket on which to respond from our websocket map
             var connectionId = params.ConnectionId;
-            var response_ws = websocketTable[connectionId];
+            var response_websocket = websocketTable[connectionId];
             var serializedHandledOperation = params.Data;
             console.log("Sending response on Websocket Connection with Remote IP:", response_ws._socket.remoteAddress ," Remote Port: ", response_ws._socket.remotePort ,  "ConnectionId:",response_ws._socket.connectionId);
-            response_ws.send(serializedHandledOperation);
+            response_websocket.send(serializedHandledOperation);
             resolve(true);
 
             });
