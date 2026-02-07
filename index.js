@@ -227,7 +227,7 @@ workerPromise.then(function (worker) {
             //Need to check if the websocket has already been cleaned up and removed from the table by now.
             //This can happen if it's closed while we're processing a request.
             if (response_websocket) {
-              console.log("Sending response on Websocket Connection with Remote IP:", response_websocket._socket.remoteAddress, " Remote Port: ", response_websocket._socket.remotePort, "ConnectionId:", response_websocket._socket.connectionId);
+            //   console.log("Sending response on Websocket Connection with Remote IP:", response_websocket._socket.remoteAddress, " Remote Port: ", response_websocket._socket.remotePort, "ConnectionId:", response_websocket._socket.connectionId);
               response_websocket.send(serializedHandledOperation);
             }
             else {
