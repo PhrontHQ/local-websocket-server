@@ -7,19 +7,20 @@
     "# (see https://github.com/npm/npm/pull/3180#issuecomment-16336516)."
   ],
   "name": "local-websocket-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": false,
   "license": "BSD-3-Clause",
   "main": "index.js",
   "author": "Phront. (https://phront.com/)",
   "repository": {
     "type": "git",
-    "url": "PhrontHQ/serverless-data-worker"
+    "url": "PhrontHQ/local-websocket-server"
   },
   "dependencies": {
     "commander": "^6.1.0",
     "mod": "github:PhrontHQ/mod#main",
-    "ws": "~7.4.1"
+    "ws": "~8.22.0",
+    "prom-client": "~15.1.3"
   },
   "devDependencies": {
     "concurrently": "^3.4.0",
