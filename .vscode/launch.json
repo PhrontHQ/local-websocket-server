@@ -8,8 +8,8 @@
         "type": "node",
         "request": "launch",
         "name": "Launch local-websocket-server",
-        "runtimeVersion": "12.18.2",
-        "program": "${workspaceFolder}/tools/local-websocket-server/index.js",
+        "runtimeVersion": "24", // If i need to run node 4.8.7
+        "program": "${workspaceFolder}/index.js",
         "trace": false,
         "skipFiles": [
             "<node_internals>/**"
