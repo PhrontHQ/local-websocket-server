@@ -1,3 +1,58 @@
+//See https://www.npmjs.com/package/commander
+const { program } = require('commander');
+
+program.option('-f, --function <function>', 'The serveless function to run')
+        .option('-p, --port <port>', 'The websocket port to use', 7272)
+        .option('-s, --stage <stage>', 'The stage to use', "staging")
+        .option('-c, --cert <sslCertificatePath>', 'Path to the ssl certificate file to use', null)
+        .option('-k, --key <sslKeyPath>', 'Path to the ssl key file to use', null)
+        .option('-gt, --gatewayTimeout <timeout>', 'A timeout for message delivery getting something back', null)
+        .option('-snl, --simulatedNetworkLatency <latency>', 'A value to simulate network latency for message delivery between both ends of the socket', null);
+
+program.parse(process.argv);
+
+
+const net = require('net');
+const networkLatency = program.simulatedNetworkLatency || process.env.SIMULATED_NETWORK_LATENCY || 0; //in ms
+const stage = program.stage;
+
+if (stage === "mod" && networkLatency > 0) {
+    const latency = parseInt(networkLatency, 10);
+    if(latency > 0) {
+        const originalWrite = net.Socket.prototype.write;
+
+        // Overwrite the native TCP write stream method
+        net.Socket.prototype.write = function (chunk, encoding, cb) {
+            const callback = typeof encoding === 'function' ? encoding : cb;
+            const enc = typeof encoding === 'string' ? encoding : 'utf8';
+
+            // Check if this socket belongs to an active, ongoing HTTP/HTTPS upload stream.
+            const isParserActive = this._httpMessage || (this.parser && this.parser.incoming);
+
+            // Apply latency to WebSocket frames and small HTTP payloads, but let heavy streams pass
+            const shouldDelay = !isParserActive || (chunk && chunk.length < 65536);
+
+            if (shouldDelay) {
+                setTimeout(() => {
+                    if (!this.destroyed) {
+                        originalWrite.call(this, chunk, enc, callback);
+                    } else if (callback) {
+                        callback(new Error('Socket destroyed before delayed write could fire'));
+                    }
+                }, latency);
+            } else {
+                return originalWrite.call(this, chunk, enc, callback);
+            }
+
+            return true;
+        };
+        
+        console.log(`\x1b[33m[DEV-LATENCY]\x1b[0m Injected ${latency}ms latency simulation onto HTTP & WebSocket sockets.`);
+    }
+}
+
+
+
 //global.Promise = require("bluebird");
 const http = require('http');
 const https = require('https');
@@ -6,7 +61,6 @@ const url = require('url');
 const URL = url.URL;
 const URLSearchParams = url.URLSearchParams;
 const fs = require('fs');
-
 
 /**
  * The timeoutPromise helper allows you to wrap any promise to fulfill within a timeout.
@@ -30,17 +84,7 @@ function PromiseTimeout(promise, timeoutInMilliseconds){
 /*
     Input from https://blog.zackad.dev/en/2017/08/19/create-websocket-with-nodejs.html
 */
-//See https://www.npmjs.com/package/commander
-const { program } = require('commander');
 
-program.option('-f, --function <function>', 'The serveless function to run')
-        .option('-p, --port <port>', 'The websocket port to use', 7272)
-        .option('-s, --stage <stage>', 'The stage to use', "staging")
-        .option('-c, --cert <sslCertificatePath>', 'Path to the ssl certificate file to use', null)
-        .option('-k, --key <sslKeyPath>', 'Path to the ssl key file to use', null)
-        .option('-gt, --gatewayTimeout <timeout>', 'A timeout for message delivery getting something back', null);
-
-program.parse(process.argv);
 var uuid = require("mod/core/uuid");
 var functionPath = program.function,
     port = program.port,
@@ -138,7 +182,7 @@ workerPromise.then(function (worker) {
                 type: 'REQUEST',
                 requestContext: {
                         connectionId: socket.connectionId,
-                        stage: program.stage,
+                        stage: stage,
                         identity: {
                             sourceIp: ip,
                             userAgent: userAgent
@@ -209,7 +253,7 @@ workerPromise.then(function (worker) {
     console.log("Starting a websocket server!");
 
     const websocketTable = {};
-
+    const MAX_BUFFER_SIZE = 1024 * 1024; // 1 MB ceiling before queuing locally
     const mockGateway =  {
         postToConnection: function(params) {
             /* params looks like:
@@ -218,22 +262,41 @@ workerPromise.then(function (worker) {
                     Data: self._serializer.serializeObject(readOperationCompleted)
                 }
             */
-          
-            this._promise = new Promise(function(resolve,reject) { 
+
+            //console.log("postToConnection params.Data: "+params.Data);
+            this._promise = new Promise(function(resolve, reject) { 
             //Retrieve the appropriate websocket on which to respond from our websocket map
-            var connectionId = params.ConnectionId;
-            var response_websocket = websocketTable[connectionId];
-            var serializedHandledOperation = params.Data;
-            //Need to check if the websocket has already been cleaned up and removed from the table by now.
-            //This can happen if it's closed while we're processing a request.
-            if (response_websocket) {
-            //   console.log("Sending response on Websocket Connection with Remote IP:", response_websocket._socket.remoteAddress, " Remote Port: ", response_websocket._socket.remotePort, "ConnectionId:", response_websocket._socket.connectionId);
-              response_websocket.send(serializedHandledOperation);
-            }
-            else {
-              console.log("Would have sent a response to a websocket connection, but the socket was closed before we were ready to send this data.")
-            }
-            resolve(true);
+                var connectionId = params.ConnectionId;
+                var response_websocket = websocketTable[connectionId];
+                var serializedHandledOperation = params.Data;
+                //Need to check if the websocket has already been cleaned up and removed from the table by now.
+                //This can happen if it's closed while we're processing a request.
+                if (response_websocket) {
+                    if (response_websocket.bufferedAmount > MAX_BUFFER_SIZE) {
+                        console.warn(`[WS Backpressure] Buffer reached ${response_websocket.bufferedAmount} bytes. Queuing locally.`);
+                    }
+
+
+                //   console.log("Sending response on Websocket Connection with Remote IP:", response_websocket._socket.remoteAddress, " Remote Port: ", response_websocket._socket.remotePort, "ConnectionId:", response_websocket._socket.connectionId);
+                    //response_websocket.send(serializedHandledOperation);
+                    // Force immediate conversion to binary
+                    // If needed:
+                    // console.debug('--- Debugging Payload ---');
+                    // console.debug('Byte length:', bufferMessage.length);
+
+                    response_websocket.send(Buffer.from(serializedHandledOperation, 'utf8'), (err) => {
+                        if (err) {
+                            console.error('Buffer send callback error:', err);
+                        } 
+                        // else {
+                        //     console.log('OS successfully accepted binary buffer. ReadyState:', response_websocket.readyState);
+                        // }
+                    });
+                }
+                else {
+                    console.log("Would have sent a response to a websocket connection, but the socket was closed before we were ready to send this data.")
+                }
+                resolve(true);
             });
             return this;
         },
@@ -274,7 +337,7 @@ workerPromise.then(function (worker) {
         functionModule.connect( {
                 requestContext: {
                     connectionId: req.socket.connectionId,
-                    stage: program.stage,
+                    stage: stage,
                     identity: {
                         sourceIp: ip,
                         userAgent: userAgent
@@ -293,6 +356,13 @@ workerPromise.then(function (worker) {
 
     
         ws.on('message', function incoming(message) {
+
+            //Backward compatible test for v7 where message is a String
+            //But in ws v8 it's a Buffer
+            if(message instanceof Buffer) {
+                message = message.toString();
+            }
+
             var mockDefaultContext = {},
                 mockDefaultCallback = function(error, result){},
                 callbackCalled = false;
@@ -300,7 +370,7 @@ workerPromise.then(function (worker) {
             var defaultPromise = functionModule.default( {
                     requestContext: {
                         connectionId: req.socket.connectionId,
-                        stage: program.stage,
+                        stage: stage,
                         identity: {
                             sourceIp: ip,
                             userAgent: userAgent
@@ -376,7 +446,7 @@ workerPromise.then(function (worker) {
             functionModule.default( {
                     requestContext: {
                         connectionId: req.socket.connectionId,
-                        stage: program.stage,
+                        stage: stage,
                         identity: {
                             sourceIp: ip,
                             userAgent: userAgent
